@@ -2,21 +2,28 @@ import React, { useState, useEffect, useRef } from "react";
 import AudioControls from "./AudioContorols";
 import Backdrop from "./Backdrop";
 import "../styles/style.css";
+import styled from '@emotion/styled'
+import { useRecoilState } from "recoil";
+import { isPlayAtom, isRepeatAtom, isShuffleAtom, trackIndexAtom } from "../utils/atoms";
 
-/*
- * Read the blog post here:
- * https://letsbuildui.dev/articles/building-an-audio-player-with-react-hooks
- */
+const SliderBar = styled.input`
+  -webkit-appearance: none;
+`;
 
 
-const AudioPlayer = ({ tracks }:any) => {
+const AudioPlayer = ({ tracks }: any) => {
+
   // State
-  const [trackIndex, setTrackIndex] = useState(0);
+  const [trackIndex, setTrackIndex] = useRecoilState(trackIndexAtom);
   const [trackProgress, setTrackProgress] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useRecoilState(isPlayAtom);
+  const [isRepeat, setIsRepeat] = useRecoilState(isRepeatAtom);
+  const [isShuffle, setIsShuffle] = useRecoilState(isShuffleAtom)
+  const [shuffleValue, setShuffleValue] = useState<any>([])
 
   // Destructure for conciseness
-  const { title, artist, color, image, audioSrc } = tracks[trackIndex];
+  const filteringTracks = tracks.filter((t:any) => t.id === trackIndex)
+  const { title, artist, color, image, audioSrc }:any = filteringTracks[0] || {};;
 
   // Refs
   const audioRef = useRef(new Audio(audioSrc));
@@ -40,7 +47,22 @@ const AudioPlayer = ({ tracks }:any) => {
 
     intervalRef.current = setInterval(() => {
       if (audioRef.current.ended) {
-        toNextTrack();
+        // 単曲リピートか確認
+        if (isRepeat === 2) {
+          toRepeatTrack();
+        } else {
+          // 違う場合、
+          // シャッフルモードか確認
+          if (isShuffle) {
+            toShuffle();
+          } else {
+            if (isRepeat === 1) {
+              toNextRepeatTrack();
+            } else {
+              toNextTrack();
+            }
+          }
+        }
       } else {
         setTrackProgress(audioRef.current.currentTime);
       }
@@ -63,20 +85,82 @@ const AudioPlayer = ({ tracks }:any) => {
   };
 
   const toPrevTrack = () => {
-    if (trackIndex - 1 < 0) {
-      setTrackIndex(tracks.length - 1);
+    if (shuffleValue.indexOf(trackIndex) - 1 < 0) {
+      setTrackIndex(Math.max(...shuffleValue));
     } else {
-      setTrackIndex(trackIndex - 1);
+      setTrackIndex(shuffleValue[shuffleValue.indexOf(trackIndex)-1]);
     }
   };
 
-  const toNextTrack = () => {
-    if (trackIndex < tracks.length - 1) {
-      setTrackIndex(trackIndex + 1);
+  const toNextRepeatTrack = () => {
+    if (shuffleValue.indexOf(trackIndex) < tracks.length - 1) {
+      setTrackIndex(shuffleValue[shuffleValue.indexOf(trackIndex)+1]);
     } else {
       setTrackIndex(0);
     }
   };
+
+  const toNextTrack = () => {
+    if (shuffleValue.indexOf(trackIndex) < tracks.length - 1) {
+      setTrackIndex(shuffleValue[shuffleValue.indexOf(trackIndex)+1]);
+    } else {
+      setIsPlaying(false)
+    }
+  };
+
+  const toRepeatTrack = async () => {
+    await setTrackIndex(trackIndex);
+    audioRef.current.pause();
+
+    audioRef.current = new Audio(audioSrc);
+    setTrackProgress(audioRef.current.currentTime);
+
+    if (isReady.current) {
+      audioRef.current.play();
+      setIsPlaying(true);
+      startTimer();
+    } else {
+      // Set the isReady ref as true for the next pass
+      isReady.current = true;
+    }
+  }
+
+  const toShuffle = () => {
+    // console.log(shuffleValue[Math.floor(Math.random() * shuffleValue.length)])
+    const randomValue = shuffleValue[Math.floor(Math.random() * shuffleValue.length)]
+    setTrackIndex(randomValue);
+    audioRef.current.pause();
+
+    audioRef.current = new Audio(audioSrc);
+    setTrackProgress(audioRef.current.currentTime);
+
+    if (isReady.current) {
+      audioRef.current.play();
+      setIsPlaying(true);
+      startTimer();
+    } else {
+      // Set the isReady ref as true for the next pass
+      isReady.current = true;
+    }
+  }
+
+  const next = () => {
+    if (isRepeat === 2) {
+      toRepeatTrack();
+    } else {
+      // 違う場合、
+      // シャッフルモードか確認
+      if (isShuffle) {
+        toShuffle();
+      } else {
+        if (isRepeat === 1) {
+          toNextRepeatTrack();
+        } else {
+          toNextTrack();
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     if (isPlaying) {
@@ -105,6 +189,17 @@ const AudioPlayer = ({ tracks }:any) => {
   }, [trackIndex]);
 
   useEffect(() => {
+    // const filteringTracks = tracks.filter((t: any) => t.id)
+    let data: any[] = []
+    tracks.forEach((t: any) => {
+      // console.log([t.id].concat(shuffleValue))
+      data.push(t.id)
+    });
+    setShuffleValue(data)
+    // const { title, artist, color, image, audioSrc } = filteringTracks[0];
+  }, [tracks])
+
+  useEffect(() => {
     // Pause and clean up on unmount
     return () => {
       audioRef.current.pause();
@@ -125,10 +220,14 @@ const AudioPlayer = ({ tracks }:any) => {
         <AudioControls
           isPlaying={isPlaying}
           onPrevClick={toPrevTrack}
-          onNextClick={toNextTrack}
+          onNextClick={next}
           onPlayPauseClick={setIsPlaying}
+          isRepeating={isRepeat}
+          onRepeat={setIsRepeat}
+          isShuffling={isShuffle}
+          onShuffle={setIsShuffle}
         />
-        <input
+        <SliderBar
           type="range"
           value={trackProgress}
           step="1"

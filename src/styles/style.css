@@ -2,15 +2,11 @@
   --white: #fff;
   --active-color: #d3e1f7;
   background: #d3e1f7;
-  box-shadow: 8px 8px 16px #c2cfe3, -8px -8px 16px #e4f3ff;
+  /* box-shadow: 8px 8px 16px #c2cfe3, -8px -8px 16px #e4f3ff; */
 }
 
 * {
   box-sizing: border-box;
-}
-
-.App {
-  margin-top: 100px;
 }
 
 html {
@@ -40,15 +36,20 @@ input[type="range"] {
 }
 
 .audio-player {
-  max-width: 350px;
+  width: 350px;
   padding: 24px;
   border-radius: 20px;
   /* box-shadow: 0 28px 28px rgba(0, 0, 0, 0.2); */
   /* border-radius: 48px; */
   background: #d3e1f7;
   box-shadow: 8px 8px 16px #c2cfe3, -8px -8px 16px #e4f3ff;
-  margin: auto;
   color: var(--white);
+}
+
+@media screen and (max-width: 850px) {
+  .audio-player {
+    margin: auto;
+  }
 }
 
 .artwork {
@@ -73,6 +74,8 @@ input[type="range"] {
 .title {
   font-weight: 700;
   margin-bottom: 4px;
+  margin-top: 20px;
+  font-size: 20px;
 }
 
 .artist {
@@ -80,28 +83,10 @@ input[type="range"] {
   margin-top: 0;
 }
 
-.audio-controls {
-  display: flex;
-  justify-content: space-between;
-  width: 75%;
-  margin: 0 auto 15px;
-}
-
-.audio-controls .prev svg,
-.audio-controls .next svg {
-  width: 35px;
-  height: 35px;
-}
-
-.audio-controls .play svg,
-.audio-controls .pause svg {
-  height: 40px;
-  width: 40px;
-}
-
+/*
 .audio-controls path {
   fill: var(--white);
-}
+} */
 
 .color-backdrop {
   /* background: linear-gradient(45deg, var(--active-color) 20%, transparent 100%)
@@ -134,4 +119,38 @@ input[type="range"] {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* .progress[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+} */
+
+.progress[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  width: 100%;
+}
+.progress[type="range"]:focus,
+.progress[type="range"]:active {
+  outline: none;
+}
+
+.progress[type="range"]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.progress[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  border: none;
+  width: 12px;
+  height: 12px;
+  display: block;
+  background-color: white;
+  border-radius: 0 50% 50% 0;
+  -webkit-border-radius: 0 50% 50% 0;
 }
